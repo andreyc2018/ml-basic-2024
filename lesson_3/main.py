@@ -115,7 +115,6 @@ def parse_input(users:dict, inp:str, maxlen:list) -> None:
             if id in users.keys():
                 return
             users[id] = (record)
-    print(users, maxlen)
 
 def print_table(users:dict, maxlen:list) -> None:
     for k,v in users.items():
