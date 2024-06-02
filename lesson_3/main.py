@@ -34,11 +34,9 @@ print(f'{inp} -> {result}')
 
 
 # 2
-DaysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-def is_valid_date(inp:str, sep='.') -> bool:
-    day = int(inp.split(sep)[0])
-    month = int(inp.split(sep)[1])
-    year = int(inp.split(sep)[2])
+DAYSINMONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+def is_leap_year(year:int) -> bool:
     leap = False
     if year % 4 != 0:
         leap = False
@@ -46,15 +44,23 @@ def is_valid_date(inp:str, sep='.') -> bool:
         leap = True
     elif year % 400 == 0:
         leap = True
+    return leap
 
+def is_valid_date(inp:str, sep='.') -> bool:
+    day = int(inp.split(sep)[0])
+    month = int(inp.split(sep)[1])
+    year = int(inp.split(sep)[2])
+    leap = is_leap_year(year)
     if month < 1 or month > 12:
         return False
-    days_in_month = DaysInMonth[month-1]
+    days_in_month = DAYSINMONTH[month-1]
     if month == 2:
         days_in_month += leap
-    if day != days_in_month:
-        return False
-    return True
+    return 1 <= day <= days_in_month
+
+years = {4: True, 5: False, 100: False, 400: True, 500: False, 2000: True }
+for year, is_leap in years.items():
+    assert(is_leap_year(year) == is_leap)
 
 inp = input('Enter date: ')
 result = is_valid_date(inp)
@@ -123,9 +129,6 @@ def print_table(users:dict, maxlen:list) -> None:
 print('\nUsers:')
 users = {}
 maxlen = [0, 0]
-while(True):
-    inp = input('')
-    if not inp:
-        break
+while(inp := input('')):
     parse_input(users, inp, maxlen)
 print_table(users, maxlen)
