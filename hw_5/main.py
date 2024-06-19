@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import datetime
+from datetime import datetime
+import os
 
 from abc import ABC, abstractmethod
 
@@ -10,43 +11,22 @@ class Metadata(ABC):
     def __init__(self, path:str) -> None:
         self.path = path
         self.size = 0
-        self.created = datetime.datetime
-        self.owner_id = 0
+        self.created = datetime.now()
+        self.owner_id = os.getuid()
         self.format = path.split('.')[-1]
 
 
-class AudioMetadata(Metadata):
-    def __init__(self, path:str) -> None:
-        super().__init__(path)
-
-
-class VideoMetadata(Metadata):
-    def __init__(self, path:str) -> None:
-        super().__init__(path)
-
-
-class ImageMetadata(Metadata):
-    def __init__(self, path:str) -> None:
-        super().__init__(path)
-
-
-class MediaConverter(ABC):
-    @abstractmethod
-    def run(self, media):
-        pass
-
-
-class AudioConverter(MediaConverter):
-    pass
-
-
 class MediaFile(ABC):
-    def __init__(self, meta, path:str) -> None:
-        self.md = meta(path)
+    def __init__(self, path:str) -> None:
+        self.md = Metadata(path)
         self.buffer = ''
 
     @abstractmethod
     def read(self) -> None:
+        pass
+
+    @abstractmethod
+    def write(self) -> None:
         pass
 
     @abstractmethod
@@ -58,9 +38,37 @@ class MediaFile(ABC):
         pass
 
 
+class FileOps(ABC):
+    @abstractmethod
+    def read(self, file:MediaFile):
+        """Read file specified in MediaFile::md::path
+           to MediaFile::buffer"""
+        pass
+
+    @abstractmethod
+    def write(self, file:MediaFile):
+        pass
+
+
+class LocalFileOps(ABC):
+    def read(self, file:MediaFile):
+        pass
+
+    def write(self, file:MediaFile):
+        pass
+
+
+class CloudFileOps(ABC):
+    def read(self, file:MediaFile):
+        pass
+
+    def write(self, file:MediaFile):
+        pass
+
+
 class AudioFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(AudioMetadata, path)
+        super().__init__(path)
         print(f'Create AuioFile {self.md.path}')
 
     def read(self) -> None:
@@ -72,18 +80,16 @@ class AudioFile(MediaFile):
     def convert(self, fmt:str) -> None:
         print(f'Convert file {self.md.path} from {self.md.format} to {fmt}')
         print(self.md.path.split('.')[:-1])
-        converter = AudioConverter()
-        converter.run(self)
 
 
 class VideoFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(VideoMetadata, path)
+        super().__init__(path)
 
 
 class ImageFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(ImageMetadata, path)
+        super().__init__(path)
 
 
 def audio():
