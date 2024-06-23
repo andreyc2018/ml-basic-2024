@@ -6,21 +6,35 @@ from pathlib import Path
 
 from abc import ABC, abstractmethod
 
-FILEFORMAT = []
+CLOUD_PREFIX = 'https://'
+
+MODE_READ = 'r'
+MODE_WRITE = 'w'
+
+MEDIA_AUDIO = 'audio'
+MEDIA_VIDEO = 'video'
+MEDIA_IMAGE = 'image'
+
+MEDIATYPES = [MEDIA_AUDIO, MEDIA_IMAGE, MEDIA_VIDEO]
 
 class Metadata(ABC):
-    def __init__(self, path:str) -> None:
+    def __init__(self, path:str, media_type:str) -> None:
         self.path = Path(path)
         self.size = 0
         self.created = datetime.now()
         self.owner_id = os.getuid()
         self.format = self.path.suffix[1:]
+        self.media_type = media_type
 
 
 class MediaFile(ABC):
-    def __init__(self, path:str) -> None:
-        self.md = Metadata(path)
+    def __init__(self, path:str, media_type:str) -> None:
+        self.md = Metadata(path, media_type)
         self.buffer = ''
+        self.file_op:FileOps = None
+
+    def open(self, mode:str) -> None:
+        self.file_op = FileOps.instantiate(self.md.path)
 
     @abstractmethod
     def read(self) -> None:
@@ -38,8 +52,19 @@ class MediaFile(ABC):
     def convert(self, fmt:str) -> None:
         pass
 
+    @property
+    def media_type(self) -> str:
+        return self.md.media_type
+
+    @property
+    def path(self) -> str:
+        return str(self.md.path)
+
+    def __eq__(self, other) -> bool:
+        return self.md.media_type == other.md.medis_type
+
     @staticmethod
-    def open(path):
+    def instantiate(path):
         ext = path.split('.')[-1]
         if ext == 'mp3':
             return AudioFile(path)
@@ -53,13 +78,17 @@ class MediaFile(ABC):
 class FileOps(ABC):
     @abstractmethod
     def read(self, file:MediaFile):
-        """Read file specified in MediaFile::md::path
-           to MediaFile::buffer"""
         pass
 
     @abstractmethod
     def write(self, file:MediaFile):
         pass
+
+    @staticmethod
+    def instantiate(path:str):
+        if path.startswith(CLOUD_PREFIX):
+            return CloudFileOps()
+        return LocalFileOps()
 
 
 class LocalFileOps(FileOps):
@@ -80,7 +109,7 @@ class CloudFileOps(FileOps):
 
 class AudioFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(path)
+        super().__init__(path, MEDIA_AUDIO)
         print(f'Create AuioFile {self.md.path}')
 
     def read(self) -> None:
@@ -101,7 +130,7 @@ class AudioFile(MediaFile):
 
 class VideoFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(path)
+        super().__init__(path, MEDIA_VIDEO)
 
     def read(self) -> None:
         raise NotImplementedError
@@ -118,7 +147,7 @@ class VideoFile(MediaFile):
 
 class ImageFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(path)
+        super().__init__(path, MEDIA_IMAGE)
 
     def read(self) -> None:
         raise NotImplementedError
@@ -134,15 +163,16 @@ class ImageFile(MediaFile):
 
 
 class FileReader:
-    def __init__(self, file_op:FileOps):
-        self.file_op = file_op
+    def __init__(self, file:MediaFile):
+        self.file_op = FileOps.instantiate(file)
+        self.
 
     def read(self, file:MediaFile):
         pass
 
 
 def audio():
-    audio = MediaFile.open('./test_audio.mp3')
+    audio = MediaFile.instantiate('./test_audio.mp3')
     try:
         file_op = LocalFileOps()
         reader = FileReader(file_op)

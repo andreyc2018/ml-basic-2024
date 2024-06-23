@@ -4,8 +4,15 @@
 import argparse
 import mediafiles
 
-def main(srd:str, dst:str) -> None:
-    pass
+def main(src:str, dst:str) -> None:
+    src_file = mediafiles.MediaFile.instantiate(src)
+    dst_file = mediafiles.MediaFile.instantiate(dst)
+    if src_file != dst_file:
+        raise ValueError(f'Unable to copy {src_file.media_type} file {src} to {dst_file.media_type} file {dst}')
+    with (src_file.open('r') as s, dst_file.open('w') as d):
+        while buffer := s.read():
+            d.write(buffer)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('copy', 'copy <source> <destination>')
