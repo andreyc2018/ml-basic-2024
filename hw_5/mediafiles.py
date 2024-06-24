@@ -34,10 +34,16 @@ class MediaFile(ABC):
         self.file_op:FileOps = None
 
     def open(self, mode:str) -> None:
-        self.file_op = FileOps.instantiate(self.md.path)
+        self.file_op = FileOps.instantiate(str(self.md.path), mode)
+        return self
+
+    def close(self) -> None:
+        self.file_op.close()
+        return self
 
     @abstractmethod
-    def read(self) -> None:
+    def read(self) -> str:
+        """Read file using """
         pass
 
     @abstractmethod
@@ -60,8 +66,15 @@ class MediaFile(ABC):
     def path(self) -> str:
         return str(self.md.path)
 
+    def __enter__(self):
+        print('ENTER')
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        print(f'EXIT: {exc_type}, {exc_value}, {traceback}')
+
     def __eq__(self, other) -> bool:
-        return self.md.media_type == other.md.medis_type
+        return self.md.media_type == other.md.media_type
 
     @staticmethod
     def instantiate(path):
@@ -76,35 +89,64 @@ class MediaFile(ABC):
 
 
 class FileOps(ABC):
+    def __init__(self, mode:str):
+        self.mode = mode
+
     @abstractmethod
-    def read(self, file:MediaFile):
+    def read(self, file:MediaFile) -> str:
         pass
 
     @abstractmethod
     def write(self, file:MediaFile):
+        pass
+
+    @abstractmethod
+    def close(self):
         pass
 
     @staticmethod
-    def instantiate(path:str):
+    def instantiate(path:str, mode:str):
         if path.startswith(CLOUD_PREFIX):
-            return CloudFileOps()
-        return LocalFileOps()
+            return CloudFileOps(mode)
+        return LocalFileOps(mode)
 
 
 class LocalFileOps(FileOps):
-    def read(self, file:MediaFile):
-        pass
+    def __init__(self, mode:str) -> None:
+        super().__init__(mode)
+
+    def read(self, file:MediaFile) -> str:
+        if MODE_READ not in self.mode:
+            raise ValueError(f'Unable to read file {file.md.path} with mode {self.mode}')
+        print('local read')
+        return ''
 
     def write(self, file:MediaFile):
-        pass
+        if MODE_WRITE not in self.mode:
+            raise ValueError(f'Unable to write file {file.md.path} with mode {self.mode}')
+        print('local write')
+
+    def close(self, file:MediaFile):
+        print('local close')
 
 
 class CloudFileOps(FileOps):
-    def read(self, file:MediaFile):
-        pass
+    def __init__(self) -> None:
+        super().__init__()
+
+    def read(self, file:MediaFile) -> str:
+        if MODE_READ not in self.mode:
+            raise ValueError(f'Unable to read file {file.md.path} with mode {self.mode}')
+        print('cloud read')
+        return ''
 
     def write(self, file:MediaFile):
-        pass
+        if MODE_WRITE not in self.mode:
+            raise ValueError(f'Unable to write file {file.md.path} with mode {self.mode}')
+        print('cloud write')
+
+    def close(self, file:MediaFile):
+        print('cloud close')
 
 
 class AudioFile(MediaFile):
@@ -112,8 +154,9 @@ class AudioFile(MediaFile):
         super().__init__(path, MEDIA_AUDIO)
         print(f'Create AuioFile {self.md.path}')
 
-    def read(self) -> None:
+    def read(self) -> str:
         print(f'Read file {self.md.path}')
+        return self.file_op.read(self)
 
     def file_format(self) -> str:
         print(f'File {self.md.path} format {self.md.format}')
@@ -132,7 +175,7 @@ class VideoFile(MediaFile):
     def __init__(self, path:str) -> None:
         super().__init__(path, MEDIA_VIDEO)
 
-    def read(self) -> None:
+    def read(self) -> str:
         raise NotImplementedError
 
     def write(self) -> None:
@@ -149,7 +192,7 @@ class ImageFile(MediaFile):
     def __init__(self, path:str) -> None:
         super().__init__(path, MEDIA_IMAGE)
 
-    def read(self) -> None:
+    def read(self) -> str:
         raise NotImplementedError
 
     def write(self) -> None:
@@ -160,32 +203,3 @@ class ImageFile(MediaFile):
 
     def convert(self, fmt:str) -> None:
         raise NotImplementedError
-
-
-class FileReader:
-    def __init__(self, file:MediaFile):
-        self.file_op = FileOps.instantiate(file)
-        self.
-
-    def read(self, file:MediaFile):
-        pass
-
-
-def audio():
-    audio = MediaFile.instantiate('./test_audio.mp3')
-    try:
-        file_op = LocalFileOps()
-        reader = FileReader(file_op)
-        reader.read(audio)
-        audio.read()
-        print(audio.file_format())
-        audio.convert('wav')
-    except Exception as ex:
-        print(f'Error {ex}')
-
-
-def main():
-    audio()
-
-if __name__ == '__main__':
-    main()
