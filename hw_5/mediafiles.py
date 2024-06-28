@@ -8,9 +8,6 @@ from abc import ABC, abstractmethod
 
 CLOUD_PREFIX = 'https://'
 
-MODE_READ = 'r'
-MODE_WRITE = 'w'
-
 MEDIA_AUDIO = 'audio'
 MEDIA_VIDEO = 'video'
 MEDIA_IMAGE = 'image'
@@ -27,14 +24,35 @@ class Metadata(ABC):
         self.media_type = media_type
 
 
-class MediaFile(ABC):
-    def __init__(self, path:str, media_type:str) -> None:
-        self.md = Metadata(path, media_type)
-        self.buffer = ''
-        self.file_op:FileOps = None
+class AudioMetadata(Metadata):
+    def __init__(self, path: str) -> None:
+        super().__init__(path, MEDIA_AUDIO)
+        self.title = ''
+        self.artist = ''
 
-    def open(self, mode:str) -> None:
-        self.file_op = FileOps.instantiate(str(self.md.path), mode)
+
+class VideoMetadata(Metadata):
+    def __init__(self, path: str) -> None:
+        super().__init__(path, MEDIA_VIDEO)
+        self.title = ''
+        self.director = ''
+
+
+class ImageMetadata(Metadata):
+    def __init__(self, path: str) -> None:
+        super().__init__(path, MEDIA_IMAGE)
+        self.height = 0
+        self.width = 0
+
+
+class MediaFile(ABC):
+    def __init__(self, metadata:Metadata) -> None:
+        self.md = metadata
+        self.buffer = ''
+        self.file_op = FileOps.make(str(self.md.path))
+
+    def open(self) -> None:
+        self.file_op.open()
         return self
 
     def close(self) -> None:
@@ -77,7 +95,7 @@ class MediaFile(ABC):
         return self.md.media_type == other.md.media_type
 
     @staticmethod
-    def instantiate(path):
+    def make(path):
         ext = path.split('.')[-1]
         if ext == 'mp3':
             return AudioFile(path)
@@ -89,8 +107,12 @@ class MediaFile(ABC):
 
 
 class FileOps(ABC):
-    def __init__(self, mode:str):
-        self.mode = mode
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def open(self, file:MediaFile) -> str:
+        pass
 
     @abstractmethod
     def read(self, file:MediaFile) -> str:
@@ -105,10 +127,10 @@ class FileOps(ABC):
         pass
 
     @staticmethod
-    def instantiate(path:str, mode:str):
+    def make(path:str):
         if path.startswith(CLOUD_PREFIX):
-            return CloudFileOps(mode)
-        return LocalFileOps(mode)
+            return CloudFileOps()
+        return LocalFileOps()
 
 
 class LocalFileOps(FileOps):
@@ -116,14 +138,10 @@ class LocalFileOps(FileOps):
         super().__init__(mode)
 
     def read(self, file:MediaFile) -> str:
-        if MODE_READ not in self.mode:
-            raise ValueError(f'Unable to read file {file.md.path} with mode {self.mode}')
         print('local read')
         return ''
 
     def write(self, file:MediaFile):
-        if MODE_WRITE not in self.mode:
-            raise ValueError(f'Unable to write file {file.md.path} with mode {self.mode}')
         print('local write')
 
     def close(self, file:MediaFile):
@@ -135,14 +153,10 @@ class CloudFileOps(FileOps):
         super().__init__()
 
     def read(self, file:MediaFile) -> str:
-        if MODE_READ not in self.mode:
-            raise ValueError(f'Unable to read file {file.md.path} with mode {self.mode}')
         print('cloud read')
         return ''
 
     def write(self, file:MediaFile):
-        if MODE_WRITE not in self.mode:
-            raise ValueError(f'Unable to write file {file.md.path} with mode {self.mode}')
         print('cloud write')
 
     def close(self, file:MediaFile):
@@ -151,7 +165,7 @@ class CloudFileOps(FileOps):
 
 class AudioFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(path, MEDIA_AUDIO)
+        super().__init__(AudioMetadata(path))
         print(f'Create AuioFile {self.md.path}')
 
     def read(self) -> str:
@@ -173,7 +187,7 @@ class AudioFile(MediaFile):
 
 class VideoFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(path, MEDIA_VIDEO)
+        super().__init__(VideoMetadata(path))
 
     def read(self) -> str:
         raise NotImplementedError
@@ -190,7 +204,7 @@ class VideoFile(MediaFile):
 
 class ImageFile(MediaFile):
     def __init__(self, path:str) -> None:
-        super().__init__(path, MEDIA_IMAGE)
+        super().__init__(ImageMetadata(path))
 
     def read(self) -> str:
         raise NotImplementedError

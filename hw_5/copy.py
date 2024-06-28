@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-"""Copy media file using mediafiles module """
+"""Copy media file using mediafiles module."""
 
 import argparse
 import mediafiles
 
 def main(src:str, dst:str) -> None:
-    src_file = mediafiles.MediaFile.instantiate(src)
-    dst_file = mediafiles.MediaFile.instantiate(dst)
+    src_file = mediafiles.MediaFile.make(src)
+    dst_file = mediafiles.MediaFile.make(dst)
     if src_file != dst_file:
         raise ValueError(f'Unable to copy {src_file.media_type} file {src} to {dst_file.media_type} file {dst}')
     with (src_file.open('r') as s, dst_file.open('w') as d):
