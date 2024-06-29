@@ -95,7 +95,7 @@ class MediaFile(ABC):
         return self.md.media_type == other.md.media_type
 
     @staticmethod
-    def make(path):
+    def make(path:str):
         ext = path.split('.')[-1]
         if ext == 'mp3':
             return AudioFile(path)
@@ -103,7 +103,7 @@ class MediaFile(ABC):
             return ImageFile(path)
         elif ext == 'mpg':
             return VideoFile(path)
-        raise ValueError(f"Unknown file type: {ext}")
+        raise ValueError(f"File {path}: unknown type: {ext}")
 
 
 class FileOps(ABC):
