@@ -3,6 +3,7 @@
 from datetime import datetime
 import os
 from pathlib import Path
+from typing import Self
 
 from abc import ABC, abstractmethod
 
@@ -15,12 +16,12 @@ MEDIA_IMAGE = 'image'
 MEDIATYPES = [MEDIA_AUDIO, MEDIA_IMAGE, MEDIA_VIDEO]
 
 class Metadata(ABC):
-    def __init__(self, path:str, media_type:str) -> None:
-        self.path = Path(path)
+    def __init__(self, location:str, media_type:str) -> None:
+        self.location = Path(location)
         self.size = 0
         self.created = datetime.now()
         self.owner_id = os.getuid()
-        self.format = self.path.suffix[1:]
+        self.format = self.location.suffix[1:]
         self.media_type = media_type
 
 
@@ -48,24 +49,22 @@ class ImageMetadata(Metadata):
 class MediaFile(ABC):
     def __init__(self, metadata:Metadata) -> None:
         self.md = metadata
-        self.buffer = ''
-        self.file_op = FileOps.make(str(self.md.path))
+        self.data = ''
+        self.file_op = FileOps.make(str(self.md.location))
 
-    def open(self) -> None:
-        self.file_op.open()
-        return self
-
-    def close(self) -> None:
-        self.file_op.close()
-        return self
-
-    @abstractmethod
-    def read(self) -> str:
-        """Read file using """
-        pass
+    def load(self) -> bool:
+        """Load the file"""
+        print(f"Load the file {self.md.location}")
+        with self.file_op.open(str(self.md.location)) as f:
+            self.data = self.file_op.read()
+        return True
 
     @abstractmethod
     def write(self) -> None:
+        pass
+
+    @abstractmethod
+    def save(self) -> None:
         pass
 
     @abstractmethod
@@ -82,16 +81,14 @@ class MediaFile(ABC):
 
     @property
     def path(self) -> str:
-        return str(self.md.path)
+        return str(self.md.location)
 
-    def __enter__(self):
-        print('ENTER')
+    def copy(self, other:Self):
+        print('ASSIGN')
+        self.data = other.data
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        print(f'EXIT: {exc_type}, {exc_value}, {traceback}')
-
-    def __eq__(self, other) -> bool:
+    def same_type(self, other) -> bool:
         return self.md.media_type == other.md.media_type
 
     @staticmethod
@@ -111,20 +108,27 @@ class FileOps(ABC):
         pass
 
     @abstractmethod
-    def open(self, file:MediaFile) -> str:
+    def open(self, file:str) -> Self:
         pass
 
     @abstractmethod
-    def read(self, file:MediaFile) -> str:
+    def read(self) -> str:
         pass
 
     @abstractmethod
-    def write(self, file:MediaFile):
+    def write(self, data:str):
         pass
 
     @abstractmethod
     def close(self):
         pass
+
+    def __enter__(self):
+        print('ENTER')
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        print(f'EXIT: {exc_type}, {exc_value}, {traceback}')
 
     @staticmethod
     def make(path:str):
@@ -134,17 +138,20 @@ class FileOps(ABC):
 
 
 class LocalFileOps(FileOps):
-    def __init__(self, mode:str) -> None:
-        super().__init__(mode)
+    def __init__(self) -> None:
+        super().__init__()
 
-    def read(self, file:MediaFile) -> str:
+    def open(self, file:str) -> Self:
+        return self
+
+    def read(self) -> str:
         print('local read')
         return ''
 
-    def write(self, file:MediaFile):
+    def write(self, file:str):
         print('local write')
 
-    def close(self, file:MediaFile):
+    def close(self):
         print('local close')
 
 
@@ -152,45 +159,46 @@ class CloudFileOps(FileOps):
     def __init__(self) -> None:
         super().__init__()
 
-    def read(self, file:MediaFile) -> str:
+    def read(self) -> str:
         print('cloud read')
         return ''
 
-    def write(self, file:MediaFile):
+    def write(self, data:str):
         print('cloud write')
 
-    def close(self, file:MediaFile):
+    def close(self):
         print('cloud close')
+
+    def open(self, file: str) -> Self:
+        raise NotImplementedError
 
 
 class AudioFile(MediaFile):
     def __init__(self, path:str) -> None:
         super().__init__(AudioMetadata(path))
-        print(f'Create AuioFile {self.md.path}')
-
-    def read(self) -> str:
-        print(f'Read file {self.md.path}')
-        return self.file_op.read(self)
+        print(f'Create AuioFile {self.md.location}')
 
     def file_format(self) -> str:
-        print(f'File {self.md.path} format {self.md.format}')
+        print(f'File {self.md.location} format {self.md.format}')
         return self.md.format
 
     def convert(self, fmt:str) -> None:
-        print(f'Convert file {self.md.path} from {self.md.format} to {fmt}')
-        self.md.path = self.md.path.with_suffix(f'.{fmt}')
-        print(self.md.path)
+        print(f'Convert file {self.md.location} from {self.md.format} to {fmt}')
+        self.md.location = self.md.location.with_suffix(f'.{fmt}')
+        print(self.md.location)
 
     def write(self) -> None:
-        print(f'Write file {self.md.path}')
+        print(f'Write file {self.md.location}')
+
+    def save(self) -> None:
+        print(f'Save file {self.md.location}')
+        with self.file_op.open(str(self.md.location)) as f:
+            f.write(self.data)
 
 
 class VideoFile(MediaFile):
     def __init__(self, path:str) -> None:
         super().__init__(VideoMetadata(path))
-
-    def read(self) -> str:
-        raise NotImplementedError
 
     def write(self) -> None:
         raise NotImplementedError
@@ -201,13 +209,13 @@ class VideoFile(MediaFile):
     def convert(self, fmt: str) -> None:
         raise NotImplementedError
 
+    def save(self) -> None:
+        raise NotImplementedError
+
 
 class ImageFile(MediaFile):
     def __init__(self, path:str) -> None:
         super().__init__(ImageMetadata(path))
-
-    def read(self) -> str:
-        raise NotImplementedError
 
     def write(self) -> None:
         raise NotImplementedError
@@ -216,4 +224,7 @@ class ImageFile(MediaFile):
         raise NotImplementedError
 
     def convert(self, fmt:str) -> None:
+        raise NotImplementedError
+
+    def save(self) -> None:
         raise NotImplementedError

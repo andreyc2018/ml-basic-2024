@@ -7,11 +7,11 @@ import mediafiles
 def main(src:str, dst:str) -> None:
     src_file = mediafiles.MediaFile.make(src)
     dst_file = mediafiles.MediaFile.make(dst)
-    if src_file != dst_file:
+    if not src_file.same_type(dst_file):
         raise ValueError(f'Unable to copy {src_file.media_type} file {src} to {dst_file.media_type} file {dst}')
-    with (src_file.open('r') as s, dst_file.open('w') as d):
-        while buffer := s.read():
-            d.write(buffer)
+    src_file.load()
+    dst_file.copy(src_file)
+    dst_file.save()
 
 
 if __name__ == '__main__':
