@@ -2,11 +2,11 @@
 """Copy media file using mediafiles module."""
 
 import argparse
-import mediafiles
+from mediafiles.mediafiles import MediaFile, make_media_file
 
 def main(src:str, dst:str) -> None:
-    src_file = mediafiles.MediaFile.make(src)
-    dst_file = mediafiles.MediaFile.make(dst)
+    src_file = make_media_file(src)
+    dst_file = make_media_file(dst)
     if not src_file.same_type(dst_file):
         raise ValueError(f'Unable to copy {src_file.media_type} file {src} to {dst_file.media_type} file {dst}')
     src_file.load()
