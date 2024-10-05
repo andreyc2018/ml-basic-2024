@@ -17,8 +17,8 @@
 
 ### Common Mediafile Metadata
 
-* filename (/media/files/outs.mp4)
-* name ("Lesson #1")
+* filename (/media/files/bla-bla.mp4)
+* name ("bla-bla")
 * filesize (123456 bytes)
 * created (988689600)
 * owner (username)
@@ -50,10 +50,10 @@
 ### Create
 
 1. From a buffer
-    * Pass a buffer with data to make function
+    * Pass a buffer with data to the make function
     * Detect type from the buffer
 2. From a file
-    * Pass a file path to make function
+    * Pass a file path to the make function
     * Detect type from the file content
 
 ### Convert

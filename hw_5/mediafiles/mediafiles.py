@@ -1,10 +1,20 @@
 from datetime import datetime
-import puremagic
 from typing import Self, Union, List
 from abc import ABC, abstractmethod
 
 from . import metadata as md
 from .fileops import FileOps
+
+
+def detect_file_type(filename:str) -> str:
+    ext = filename.split('.')[-1]
+    if ext == 'mp3':
+        return md.MEDIA_AUDIO
+    if ext == 'mpg':
+        return md.MEDIA_VIDEO
+    if ext == 'jpg':
+        return md.MEDIA_IMAGE
+    return 'unknown'
 
 
 class MediaFile(ABC):
@@ -51,22 +61,15 @@ class MediaFile(ABC):
     def path(self) -> str:
         return str(self.md.location)
 
-    def copy(self, other:Self) -> Self:
-        print('COPY')
-        self.data = other.data
-        return self
-
-    def same_type(self, other:Self) -> bool:
-        return self.md._media_type == other.md._media_type
+    def __str__(self) -> str:
+        return f"{self.md.location}: {self.media_type}"
 
 
 class AudioFile(MediaFile):
     def __init__(self, path:str) -> None:
         super().__init__(md.AudioMetadata(path))
-        print(f'Create {self.md._media_type} {self.md.location}')
 
     def file_format(self) -> str:
-        print(f'File {self.md.location} format {self.md.format}')
         return self.md.format
 
     def convert(self, fmt:str) -> None:
@@ -86,7 +89,6 @@ class AudioFile(MediaFile):
 class VideoFile(MediaFile):
     def __init__(self, path:str) -> None:
         super().__init__(md.VideoMetadata(path))
-        print(f'Create {self.md._media_type} {self.md.location}')
 
     def write(self) -> None:
         raise NotImplementedError
@@ -104,7 +106,6 @@ class VideoFile(MediaFile):
 class ImageFile(MediaFile):
     def __init__(self, path:str) -> None:
         super().__init__(md.ImageMetadata(path))
-        print(f'Create {self.md._media_type} {self.md.location}')
 
     def write(self) -> None:
         raise NotImplementedError
@@ -120,12 +121,11 @@ class ImageFile(MediaFile):
 
 
 def make_media_file(path:str) -> Union[AudioFile, ImageFile, VideoFile]:
-    mime_type = puremagic.from_file(path, mime=True)
-    kind = mime_type.split('/')[0]
+    kind = detect_file_type(path.split('/')[-1])
     if kind == md.MEDIA_AUDIO:
         return AudioFile(path)
     elif kind == md.MEDIA_IMAGE:
         return ImageFile(path)
     elif kind == md.MEDIA_VIDEO:
         return VideoFile(path)
-    raise ValueError(f"File {path}: unknown media type: {mime_type}")
+    raise ValueError(f"File {path}: unknown media type: {kind}")

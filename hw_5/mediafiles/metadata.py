@@ -14,7 +14,7 @@ MEDIATYPES = [MEDIA_AUDIO, MEDIA_IMAGE, MEDIA_VIDEO]
 class Metadata(ABC):
     def __init__(self, location:str, media_type:str) -> None:
         self.location = Path(location)
-        self.name = ""
+        self.name = location.split('/')[-1].split('.')[0]
         self.filesize = 0
         self.created = datetime.now()
         self.owner_id = os.getuid()
@@ -25,23 +25,23 @@ class Metadata(ABC):
 class AudioMetadata(Metadata):
     def __init__(self, path: str) -> None:
         super().__init__(path, MEDIA_AUDIO)
-        self.format = ''
-        self.rate = 0
-        self.channels = 0
+        self.format = "MP4A"
+        self.rate = 48000
+        self.channels = 32
 
 
 class VideoMetadata(Metadata):
     def __init__(self, path: str) -> None:
         super().__init__(path, MEDIA_VIDEO)
-        self.height = 0
-        self.width = 0
-        self.format = ""
-        self.bitrate = 0
+        self.width = 1024
+        self.height = 800
+        self.codec = "H264"
+        self.bitrate = 677
 
 class ImageMetadata(Metadata):
     def __init__(self, path: str) -> None:
         super().__init__(path, MEDIA_IMAGE)
-        self.height = 0
-        self.width = 0
-        self.ppi = ""
-        self.colorspace = ""
+        self.width = 320
+        self.height = 240
+        self.ppi = 72
+        self.colorspace = "RGB"
